@@ -222,4 +222,28 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
     public List<ProjectEntity> getProjectsByEmployee(EmployeeEntity employee) {
         return projectRepository.findByCreatedBy(employee);
     }
+
+    public List<ProjectEntity> getProjectsByManagerUsername(String username) {
+        // Validate and retrieve the manager entity by username
+        EmployeeEntity manager = employeeService.getEmployeeDetails(username);
+
+        if (!"manager".equalsIgnoreCase(manager.getRole().getRoleName())) {
+            throw new IllegalArgumentException("The provided username does not belong to a manager.");
+        }
+
+        // Fetch and return projects managed by this username
+        return projectRepository.findProjectsByManagerUsername(username);
+    }
+
+    public List<ProjectEntity> getProjectsByEmployeeUsername(String username) {
+        // Validate and retrieve the employee entity by username
+        EmployeeEntity employee = employeeService.getEmployeeDetails(username);
+
+        if (!"employee".equalsIgnoreCase(employee.getRole().getRoleName())) {
+            throw new IllegalArgumentException("The provided username does not belong to an employee.");
+        }
+
+        // Fetch and return projects associated with this username
+        return projectRepository.findProjectsByEmployeeUsername(username);
+    }
 }

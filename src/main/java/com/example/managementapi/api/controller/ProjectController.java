@@ -50,17 +50,15 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/manager/{managerId}")
-    public ResponseEntity<List<ProjectEntity>> getProjectsByManager(@PathVariable Integer managerId) {
-        EmployeeEntity manager = new EmployeeEntity();
-        manager.setEmployeeId(managerId);
-        return ResponseEntity.ok(projectService.getProjectsByManager(manager));
+    @GetMapping("/manager/{manager}")
+    public ResponseEntity<List<ProjectEntity>> getProjectsByManager(@PathVariable String manager) {
+        List<ProjectEntity> projects = projectService.getProjectsByManagerUsername(manager);
+        return ResponseEntity.ok(projects);
     }
 
-    @GetMapping("/employee/{employeeId}")
-    public ResponseEntity<List<ProjectEntity>> getProjectsByEmployee(@PathVariable Integer employeeId) {
-        EmployeeEntity employee = new EmployeeEntity();
-        employee.setEmployeeId(employeeId);
-        return ResponseEntity.ok(projectService.getProjectsByEmployee(employee));
+    @GetMapping("/employee/{employee}")
+    public ResponseEntity<List<ProjectEntity>> getProjectsByEmployee(@PathVariable String employee) {
+        List<ProjectEntity> projects = projectService.getProjectsByEmployeeUsername(employee);
+        return ResponseEntity.ok(projects);
     }
 }
