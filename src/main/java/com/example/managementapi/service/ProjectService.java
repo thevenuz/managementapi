@@ -101,8 +101,8 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
     if (!"manager".equalsIgnoreCase(manager.getRole().getRoleName())) {
         throw new IllegalArgumentException("The provided manager is not a manager.");
     }
-    if (!"employee".equalsIgnoreCase(createdBy.getRole().getRoleName()) && !"manager".equalsIgnoreCase(createdBy.getRole().getRoleName())) {
-        throw new IllegalArgumentException("The creator must have a valid role (employee or manager).");
+    if (!"admin".equalsIgnoreCase(createdBy.getRole().getRoleName()) && !"manager".equalsIgnoreCase(createdBy.getRole().getRoleName())) {
+        throw new IllegalArgumentException("The creator must have a valid role (admin or manager).");
     }
 
     // Set created_by and manager
@@ -133,19 +133,86 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
 }
 
 
-    public ProjectEntity updateProject(Integer id, ProjectEntity updatedProject) {
-        return projectRepository.findById(id).map(project -> {
-            project.setProjectName(updatedProject.getProjectName());
-            project.setManager(updatedProject.getManager());
-            project.setStartDate(updatedProject.getStartDate());
-            project.setExpectedFinishDate(updatedProject.getExpectedFinishDate());
-            project.setProjectStatus(updatedProject.getProjectStatus());
-            return projectRepository.save(project);
-        }).orElseThrow(() -> new RuntimeException("Project not found with ID: " + id));
+//    public ProjectEntity updateProject(Integer id, ProjectEntity updatedProject) {
+//        return projectRepository.findById(id).map(project -> {
+//            project.setProjectName(updatedProject.getProjectName());
+//            project.setManager(updatedProject.getManager());
+//            project.setStartDate(updatedProject.getStartDate());
+//            project.setExpectedFinishDate(updatedProject.getExpectedFinishDate());
+//            project.setProjectStatus(updatedProject.getProjectStatus());
+//            return projectRepository.save(project);
+//        }).orElseThrow(() -> new RuntimeException("Project not found with ID: " + id));
+//    }
+
+    public ProjectEntity updateProject(Integer projectId, ProjectDTO projectDTO) {
+        // Fetch the existing project from the database
+        ProjectEntity existingProject = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
+
+        // Update project details
+        existingProject.setProjectName(projectDTO.getProject_title());
+        existingProject.setProjectDescription(projectDTO.getProject_description());
+        existingProject.setStartDate(projectDTO.getStart_date());
+        existingProject.setExpectedFinishDate(projectDTO.getExpected_finish_date());
+        existingProject.setBudget(projectDTO.getBudget());
+
+        // Fetch employee details for manager and created_by
+        EmployeeEntity manager = employeeService.getEmployeeDetails(projectDTO.getManager());
+        EmployeeEntity createdBy = employeeService.getEmployeeDetails(projectDTO.getCreated_by());
+
+        // Validate roles for manager and created_by
+        if (!"manager".equalsIgnoreCase(manager.getRole().getRoleName())) {
+            throw new IllegalArgumentException("The provided manager is not a manager.");
+        }
+        if (!"admin".equalsIgnoreCase(createdBy.getRole().getRoleName()) && !"manager".equalsIgnoreCase(createdBy.getRole().getRoleName())) {
+            throw new IllegalArgumentException("The creator must have a valid role (admin or manager).");
+        }
+
+        // Set created_by and manager
+        existingProject.setCreatedBy(createdBy);
+        existingProject.setManager(manager);
+
+        // Update employees: Remove old employees and add new ones
+        if (projectDTO.getEmployees() != null) {
+            // Remove previous employees linked to the project
+            employeeToProjectService.deleteByProject(existingProject);
+
+            // Add new employees
+            for (String username : projectDTO.getEmployees()) {
+                EmployeeEntity employee = employeeService.getEmployeeDetails(username);
+                if (!"employee".equalsIgnoreCase(employee.getRole().getRoleName())) {
+                    throw new IllegalArgumentException("One or more employees have invalid roles.");
+                }
+
+                // Create EmployeeToProjectEntity and save
+                EmployeeToProjectEntity employeeToProject = new EmployeeToProjectEntity();
+                employeeToProject.setEmployee(employee);
+                employeeToProject.setProject(existingProject);
+
+                employeeToProjectService.createEmployeeToProject(employeeToProject);
+            }
+        }
+
+        // Save and return the updated project
+        return projectRepository.save(existingProject);
     }
 
-    public void deleteProject(Integer id) {
-        projectRepository.deleteById(id);
+
+    public void deleteProject(Integer projectId) {
+        // First, find the project by its ID
+        Optional<ProjectEntity> projectOptional = projectRepository.findById(projectId);
+
+        if (projectOptional.isPresent()) {
+            ProjectEntity project = projectOptional.get();
+
+            // Remove all employee-project associations for the given project
+            employeeToProjectService.deleteByProject(project);
+
+            // Now, delete the project from the project table
+            projectRepository.delete(project);
+        } else {
+            throw new IllegalArgumentException("Project with ID " + projectId + " not found.");
+        }
     }
 
     public List<ProjectEntity> getProjectsByManager(EmployeeEntity manager) {
