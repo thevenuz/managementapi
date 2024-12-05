@@ -31,26 +31,27 @@ public class TaskController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
     }
 
-    @GetMapping
+    @GetMapping("/tasks")
     public ResponseEntity<List<TaskEntity>> getAllTasks() {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    @GetMapping("/{taskId}")
+    @GetMapping("tasks/{taskId}")
     public ResponseEntity<TaskEntity> getTaskById(@PathVariable Integer taskId) {
         return ResponseEntity.ok(taskService.getTaskById(taskId));
     }
 
-//    @PutMapping("/{taskId}")
-//    public ResponseEntity<TaskEntity> updateTask(
-//            @PathVariable Integer taskId,
-//            @RequestBody TaskEntity taskDetails) {
-//
-//        TaskEntity updatedTask = taskService.updateTask(taskId, taskDetails);
-//        return ResponseEntity.ok(updatedTask);
-//    }
+    @PutMapping("/projects/{projectId}/tasks/{taskId}")
+    public ResponseEntity<TaskEntity> updateTask(
+            @PathVariable Integer projectId,
+            @PathVariable Integer taskId,
+            @RequestBody TaskDTO taskDetails) {
 
-    @DeleteMapping("/{taskId}")
+        TaskEntity updatedTask = taskService.updateTask(taskId, taskDetails);
+        return ResponseEntity.ok(updatedTask);
+    }
+
+    @DeleteMapping("/tasks/{taskId}")
     public ResponseEntity<Void> deleteTask(@PathVariable Integer taskId) {
         taskService.deleteTask(taskId);
         return ResponseEntity.noContent().build();

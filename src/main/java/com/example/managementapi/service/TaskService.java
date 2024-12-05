@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -84,16 +85,48 @@ public class TaskService {
         return taskRepository.findById(taskId).orElseThrow(() -> new EntityNotFoundException("Task not found"));
     }
 
-//    public TaskEntity updateTask(Integer taskId, TaskDTO taskDTO) {
-//        TaskEntity task = getTaskById(taskId);
-//        task.setTaskName(taskDTO.getTaskTitle());
-//        task.setTaskDescription(taskDTO.getTaskDescription());
-//        task.setAssignedTeam(taskDTO.getAssignedTeam());
-//        task.setStartDate(taskDTO.getStartDate());
-//        task.setExpectedFinishDate(taskDTO.getExpectedFinishDate());
-//        task.setTaskStatus(taskDTO.getTaskStatus());
-//        return taskRepository.save(task);
-//    }
+    public TaskEntity updateTask(Integer taskId, TaskDTO taskDTO) {
+        // Fetch the existing task
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task with ID " + taskId + " not found."));
+
+        // Update basic task fields
+        task.setTaskName(taskDTO.getTask_title());
+        task.setTaskDescription(taskDTO.getTask_description());
+        task.setAssignedTeam(TaskEntity.AssignedTeam.valueOf(taskDTO.getAssigned_team()));
+        task.setTaskStatus(TaskEntity.TaskStatus.valueOf(taskDTO.getTask_status().toLowerCase()));
+        task.setStartDate(taskDTO.getStart_date());
+        task.setExpectedFinishDate(taskDTO.getExpected_finish_date());
+
+        // Update the project (if provided in the DTO)
+//        if (taskDTO.getProjectId() != null) {
+//            ProjectEntity project = projectService.getProjectById(taskDTO.getProjectId())
+//                    .orElseThrow(() -> new IllegalArgumentException("Project with ID " + taskDTO.getProjectId() + " not found."));
+//            task.setProject(project);
+//        }
+
+        // Save the updated task to ensure consistency
+        TaskEntity updatedTask = taskRepository.save(task);
+
+        // Update employees assigned to the task
+        if (taskDTO.getEmployees() != null) {
+            // Remove existing employee-task mappings for this task
+            employeeToTaskService.deleteByTask(task);
+
+            // Add new employee-task mappings
+            for (String username : taskDTO.getEmployees()) {
+                EmployeeEntity employee = employeeService.getEmployeeDetails(username);
+                EmployeeToTaskEntity employeeToTask = new EmployeeToTaskEntity();
+                employeeToTask.setTask(updatedTask);
+                employeeToTask.setEmployee(employee);
+                employeeToTaskService.createEmployeeToTask(employeeToTask);
+            }
+        }
+
+
+
+        return updatedTask;
+    }
 
     public void deleteTask(Integer taskId) {
         TaskEntity task = getTaskById(taskId);

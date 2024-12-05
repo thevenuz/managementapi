@@ -62,5 +62,10 @@ public class EmployeeToTaskService {
     public void deleteMappingsByEmployee(EmployeeEntity employee) {
         employeeToTaskRepository.deleteByEmployee(employee);
     }
+
+    @Transactional
+    public void deleteByTask(TaskEntity task) {
+        employeeToTaskRepository.deleteByTask(task);
+    }
 }
 
