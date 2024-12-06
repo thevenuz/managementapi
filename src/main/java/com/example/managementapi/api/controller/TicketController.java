@@ -1,44 +1,43 @@
 package com.example.managementapi.api.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import com.example.managementapi.dto.TicketDTO;
+import com.example.managementapi.entity.TicketEntity;
+import com.example.managementapi.service.TicketService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.Map;
 
-//@RestController
-//@RequestMapping("/prm/tickets")
-//@CrossOrigin(origins = "*")
-//public class TicketController {
-//
-//    @Autowired
-//    private TicketService ticketService;
-//
-//    @GetMapping("/{id}")
-//    public ResponseEntity<TicketEntity> getTicket(@PathVariable String id) {
-//        return ResponseEntity.ok(ticketService.getTicketById(id));
-//    }
-//
-//    @PostMapping("/{taskId}/new")
-//    public ResponseEntity<Map<String, Object>> createTicket(
-//            @PathVariable String taskId,
-//            @RequestBody Map<String, Object> ticketData) {
-//        try {
-//            ticketData.put("ticketId", "t_" + String.format("%03d", ticketService.getLatestTicketId() + 1));
-//            ticketData.put("ticketStatus", "Open");
-//            ticketData.put("createdDate", ticketService.getCurrentDate());
-//            ticketData.put("lastUpdatedDate", ticketService.getCurrentDate());
-//
-//            TicketEntity newTicket = ticketService.createTicket(taskId, ticketData);
-//            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("ticket", newTicket));
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-//        }
-//    }
-//
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<Map<String, String>> deleteTicket(@PathVariable String id) {
-//        ticketService.deleteTicket(id);
-//        return ResponseEntity.ok(Map.of("message", "Ticket deleted successfully."));
-//    }
-//}
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/prm")
+public class TicketController {
+
+    private final TicketService ticketService;
+
+    public TicketController(TicketService ticketService) {
+        this.ticketService = ticketService;
+    }
+
+    @PostMapping("/tasks/{taskId}/ticket/new")
+    public ResponseEntity<TicketEntity> createTicket(@PathVariable Integer taskId, @RequestBody TicketDTO ticketDTO) {
+        return ResponseEntity.ok(ticketService.createTicket(taskId, ticketDTO));
+    }
+
+    @GetMapping("/{ticketId}")
+    public ResponseEntity<TicketEntity> getTicket(@PathVariable Integer ticketId) {
+        Optional<TicketEntity> ticket = ticketService.getTicketById(ticketId);
+        return ticket.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{ticketId}")
+    public ResponseEntity<TicketEntity> updateTicket(@PathVariable Integer ticketId, @RequestBody TicketDTO ticketDTO) {
+        return ResponseEntity.ok(ticketService.updateTicket(ticketId, ticketDTO));
+    }
+
+    @DeleteMapping("/{ticketId}")
+    public ResponseEntity<Void> deleteTicket(@PathVariable Integer ticketId) {
+        ticketService.deleteTicket(ticketId);
+        return ResponseEntity.noContent().build();
+    }
+}

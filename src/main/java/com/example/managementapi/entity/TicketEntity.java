@@ -1,6 +1,5 @@
 package com.example.managementapi.entity;
 
-
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,31 +10,40 @@ public class TicketEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int ticketId;
+    @Column(name = "ticket_id")
+    private Integer ticketId;
 
     @ManyToOne
     @JoinColumn(name = "task_id", nullable = false)
     private TaskEntity task;
 
-    @Column(nullable = false)
+    @Column(name = "ticket_title", nullable = false, length = 100)
     private String ticketTitle;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "ticket_description")
     private String ticketDescription;
 
+    @Column(name = "ticket_type", nullable = false)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private TicketType ticketType;
 
+    public enum TicketType {
+        bug, change_request, feature_request, support
+    }
+
+    @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TicketStatus status;
+    private Status status = Status.open;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    public enum Status {
+        open, in_progress, closed
+    }
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDate createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDate updatedAt;
 
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
@@ -45,23 +53,15 @@ public class TicketEntity {
     @JoinColumn(name = "assigned_user")
     private EmployeeEntity assignedUser;
 
-    @Column
+    @Column(name = "closed_date")
     private LocalDate closedDate;
 
-    public enum TicketType {
-        bug, change_request, feature_request, support
-    }
-
-    public enum TicketStatus {
-        open, in_progress, closed
-    }
-
     // Getters and Setters
-    public int getTicketId() {
+    public Integer getTicketId() {
         return ticketId;
     }
 
-    public void setTicketId(int ticketId) {
+    public void setTicketId(Integer ticketId) {
         this.ticketId = ticketId;
     }
 
@@ -97,27 +97,27 @@ public class TicketEntity {
         this.ticketType = ticketType;
     }
 
-    public TicketStatus getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(TicketStatus status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public LocalDate getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(LocalDate createdAt) {
         this.createdAt = createdAt;
     }
 
-    public LocalDateTime getUpdatedAt() {
+    public LocalDate getUpdatedAt() {
         return updatedAt;
     }
 
-    public void setUpdatedAt(LocalDateTime updatedAt) {
+    public void setUpdatedAt(LocalDate updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -145,4 +145,3 @@ public class TicketEntity {
         this.closedDate = closedDate;
     }
 }
-
