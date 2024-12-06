@@ -23,19 +23,19 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.createTicket(taskId, ticketDTO));
     }
 
-    @GetMapping("/{ticketId}")
+    @GetMapping("/tickets/{ticketId}")
     public ResponseEntity<TicketEntity> getTicket(@PathVariable Integer ticketId) {
         Optional<TicketEntity> ticket = ticketService.getTicketById(ticketId);
         return ticket.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/{ticketId}")
-    public ResponseEntity<TicketEntity> updateTicket(@PathVariable Integer ticketId, @RequestBody TicketDTO ticketDTO) {
-        return ResponseEntity.ok(ticketService.updateTicket(ticketId, ticketDTO));
+    @PutMapping("/tasks/{taskId}/tickets/{ticketId}")
+    public ResponseEntity<TicketEntity> updateTicket(@PathVariable Integer taskId, @PathVariable Integer ticketId, @RequestBody TicketDTO ticketDTO) {
+        return ResponseEntity.ok(ticketService.updateTicket(taskId, ticketId, ticketDTO));
     }
 
-    @DeleteMapping("/{ticketId}")
+    @DeleteMapping("/tickets/{ticketId}")
     public ResponseEntity<Void> deleteTicket(@PathVariable Integer ticketId) {
         ticketService.deleteTicket(ticketId);
         return ResponseEntity.noContent().build();
