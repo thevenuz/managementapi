@@ -36,6 +36,11 @@ public class EmployeeToProjectService {
         employeeToProjectRepository.deleteById(id);
     }
 
+    public List<EmployeeToProjectEntity> getEmployeesByProject(ProjectEntity project) {
+        List<EmployeeToProjectEntity> employeeToProjectEntities = employeeToProjectRepository.findByProject(project);
+        return employeeToProjectEntities;
+    }
+
     // Method to delete employee-project associations for a given project
     public void deleteByProject(ProjectEntity project) {
         // Find and delete all EmployeeToProjectEntities associated with the given project

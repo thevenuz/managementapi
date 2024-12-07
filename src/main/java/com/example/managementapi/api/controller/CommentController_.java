@@ -1,44 +1,63 @@
-package com.example.managementapi.api.controller;
-
-
-import com.example.managementapi.entity.CommentEntity;
-import com.example.managementapi.service.CommentService;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
+//package com.example.managementapi.api.controller;
+//
+//import com.example.managementapi.dto.CommentDTO;
+//import com.example.managementapi.entity.CommentEntity;
+//import com.example.managementapi.service.CommentService;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.http.HttpStatus;
+//import org.springframework.http.ResponseEntity;
+//import org.springframework.web.bind.annotation.*;
+//
+//import java.util.List;
+//
 //@RestController
-//@RequestMapping("/comments")
+//@RequestMapping("/prm")
 //public class CommentController_ {
 //
-//    private final CommentService commentService;
+//    @Autowired
+//    private CommentService commentService;
 //
-//    public CommentController_(CommentService commentService) {
-//        this.commentService = commentService;
+//    // Create a new comment
+//    @PostMapping("/tickets/{ticketId}/comments")
+//    public ResponseEntity<CommentEntity> createComment(@PathVariable Integer ticketId, @RequestBody CommentDTO commentDTO) {
+//        try {
+//            CommentEntity comment = commentService.createComment(ticketId, commentDTO);
+//            return ResponseEntity.status(HttpStatus.CREATED).body(comment);
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        }
 //    }
 //
-//    @GetMapping
-//    public List<CommentEntity> getAllComments() {
-//        return commentService.getAllComments();
+//    // Get all comments for a ticket
+//    @GetMapping("/ticket/{ticketId}")
+//    public ResponseEntity<List<CommentEntity>> getCommentsByTicket(@PathVariable Integer ticketId) {
+//        try {
+//            List<CommentEntity> comments = commentService.getCommentsByTicket(ticketId);
+//            return ResponseEntity.ok(comments);
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        }
 //    }
 //
-//    @GetMapping("/{id}")
-//    public CommentEntity getCommentById(@PathVariable int id) {
-//        return commentService.getCommentById(id);
+//    // Update an existing comment
+//    @PutMapping("/{commentId}")
+//    public ResponseEntity<CommentEntity> updateComment(@PathVariable Integer commentId, @RequestBody CommentDTO commentDTO) {
+//        try {
+//            CommentEntity updatedComment = commentService.updateComment(commentId, commentDTO);
+//            return ResponseEntity.ok(updatedComment);
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+//        }
 //    }
 //
-//    @PostMapping
-//    public CommentEntity addComment(@RequestBody CommentEntity comment) {
-//        return commentService.addComment(comment);
-//    }
-//
-//    @PutMapping("/{id}")
-//    public CommentEntity updateComment(@PathVariable int id, @RequestBody CommentEntity comment) {
-//        return commentService.updateComment(id, comment);
-//    }
-//
-//    @DeleteMapping("/{id}")
-//    public void deleteComment(@PathVariable int id) {
-//        commentService.deleteComment(id);
+//    // Delete a comment
+//    @DeleteMapping("/{commentId}")
+//    public ResponseEntity<Void> deleteComment(@PathVariable Integer commentId) {
+//        try {
+//            commentService.deleteComment(commentId);
+//            return ResponseEntity.noContent().build();
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+//        }
 //    }
 //}

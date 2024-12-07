@@ -9,28 +9,29 @@ public class CommentEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int commentId;
+    @Column(name = "comment_id")
+    private Integer commentId;
 
     @ManyToOne
     @JoinColumn(name = "ticket_id", nullable = false)
     private TicketEntity ticket;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
-    private String commentText;
+    @Column(name = "comment_text", nullable = false) // We are renaming this column to comment_text to match DB schema
+    private String commentDescription; // Renamed from 'commentText' to 'commentDescription'
 
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
     private EmployeeEntity createdBy;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     // Getters and Setters
-    public int getCommentId() {
+    public Integer getCommentId() {
         return commentId;
     }
 
-    public void setCommentId(int commentId) {
+    public void setCommentId(Integer commentId) {
         this.commentId = commentId;
     }
 
@@ -42,12 +43,12 @@ public class CommentEntity {
         this.ticket = ticket;
     }
 
-    public String getCommentText() {
-        return commentText;
+    public String getCommentDescription() {
+        return commentDescription;
     }
 
-    public void setCommentText(String commentText) {
-        this.commentText = commentText;
+    public void setCommentDescription(String commentDescription) {
+        this.commentDescription = commentDescription;
     }
 
     public EmployeeEntity getCreatedBy() {

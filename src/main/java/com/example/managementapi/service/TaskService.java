@@ -132,5 +132,9 @@ public class TaskService {
         TaskEntity task = getTaskById(taskId);
         taskRepository.delete(task);
     }
+
+    public List<TaskEntity> getTasksByProject(ProjectEntity project) {
+        return taskRepository.findByProject(project);
+    }
 }
 

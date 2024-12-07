@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController
@@ -18,8 +20,12 @@ public class EmployeeController {
     private EmployeeService employeeService;
 
     @PostMapping
-    public ResponseEntity<EmployeeEntity> createEmployee(@RequestBody EmployeeDTO employeeDTO) {
+    public ResponseEntity<?> createEmployee(@RequestBody EmployeeDTO employeeDTO) {
         EmployeeEntity createdEmployee = employeeService.createEmployee(employeeDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdEmployee);
+        //return ResponseEntity.status(HttpStatus.CREATED).body(createdEmployee);
+        Map<String, Object> response = new HashMap<>();
+        response.put("isSuccess", true);
+        response.put("data", true);
+        return ResponseEntity.ok(response);
     }
 }

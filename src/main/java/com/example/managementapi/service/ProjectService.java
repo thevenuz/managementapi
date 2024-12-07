@@ -4,8 +4,10 @@ import com.example.managementapi.dto.ProjectDTO;
 import com.example.managementapi.entity.EmployeeToProjectEntity;
 import com.example.managementapi.entity.ProjectEntity;
 import com.example.managementapi.entity.EmployeeEntity;
+import com.example.managementapi.entity.TaskEntity;
 import com.example.managementapi.repository.EmployeeRepository;
 import com.example.managementapi.repository.ProjectRepository;
+import com.example.managementapi.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,14 +23,36 @@ public class ProjectService {
     private EmployeeService employeeService;
 
     @Autowired
+    private TaskRepository taskRepository;
+
+    @Autowired
     private EmployeeToProjectService employeeToProjectService;
 
     public List<ProjectEntity> getAllProjects() {
         return projectRepository.findAll();
     }
 
+    public Map<String, Object> getProjectByIdJson(Integer id) {
+        Optional<ProjectEntity> projectOptional = projectRepository.findById(id);
+
+        ProjectEntity  project= projectOptional.get();
+
+        List<EmployeeToProjectEntity> emp= employeeToProjectService.getEmployeesByProject(project);
+
+        List<String> employeeNames = new ArrayList<>();
+        for (EmployeeToProjectEntity e : emp) {
+            if (e.getEmployee() != null && e.getEmployee().getUsername() != null) {
+                employeeNames.add(e.getEmployee().getUsername());
+            }
+        }
+
+        return  formatProject(project, employeeNames);
+    }
+
     public Optional<ProjectEntity> getProjectById(Integer id) {
         return projectRepository.findById(id);
+
+
     }
 
     // Helper method
@@ -83,7 +107,7 @@ public class ProjectService {
 
 
 
-public ProjectEntity createProject(ProjectDTO projectDTO) {
+public Map<String, Object> createProject(ProjectDTO projectDTO) {
     // Create a new ProjectEntity
     ProjectEntity project = new ProjectEntity();
     project.setProjectName(projectDTO.getProject_title());
@@ -112,6 +136,8 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
     // Save project first to get its ID
     ProjectEntity savedProject = projectRepository.save(project);
 
+    List<String> addedEmployees = new ArrayList<>();
+
     // Handle employees and map them to the project
     if (projectDTO.getEmployees() != null) {
         for (String username : projectDTO.getEmployees()) {
@@ -123,14 +149,51 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
             // Create EmployeeToProjectEntity and save
             EmployeeToProjectEntity employeeToProject = new EmployeeToProjectEntity();
             employeeToProject.setEmployee(employee);
+            addedEmployees.add(employeeToProject.getEmployee().getUsername());
             employeeToProject.setProject(savedProject);
 
             employeeToProjectService.createEmployeeToProject(employeeToProject);
         }
     }
 
-    return savedProject;
+    return formatProject(project, addedEmployees);
 }
+
+    public List<TaskEntity> getTasksByProject(ProjectEntity project) {
+        return taskRepository.findByProject(project);
+    }
+
+    private Map<String, Object> formatProject(ProjectEntity project, List<String> employees) {
+
+        List<TaskEntity> tasks = getTasksByProject(project);
+
+        Map<String, Object> projectDetails = new HashMap<>();
+        projectDetails.put("project_id", project.getProjectId());
+        projectDetails.put("project_title", project.getProjectName());
+        projectDetails.put("project_description", project.getProjectDescription());
+        projectDetails.put("start_date", project.getStartDate() != null ? project.getStartDate().toString() : null);
+        projectDetails.put("project_status", project.getProjectStatus());
+        projectDetails.put("expected_finish_date", project.getExpectedFinishDate() != null ? project.getExpectedFinishDate().toString() : null);
+        projectDetails.put("budget", project.getBudget() != null ? project.getBudget().toString() : null);
+        projectDetails.put("created_by", project.getCreatedBy() != null ? project.getCreatedBy().getEmployeeId() : null);
+        projectDetails.put("employees", employees);
+        //projectDetails.put("tasks", project.getTasks() != null ? project.getTasks().stream().map(TaskEntity::getTaskId).toList() : null);
+        projectDetails.put("manager", project.getManager() != null ? project.getManager().getEmployeeId() : null);
+
+        // Build the task list
+        List<Map<String, String>> taskList = new ArrayList<>();
+        if (tasks != null) {
+            for (TaskEntity task : tasks) {
+                Map<String, String> taskMap = new HashMap<>();
+                taskMap.put("task_title", task.getTaskName());
+                taskMap.put("task_description", task.getTaskDescription());
+                taskList.add(taskMap);
+            }
+        }
+        projectDetails.put("tasks", taskList);
+
+        return projectDetails;
+    }
 
 
 //    public ProjectEntity updateProject(Integer id, ProjectEntity updatedProject) {
@@ -144,7 +207,7 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
 //        }).orElseThrow(() -> new RuntimeException("Project not found with ID: " + id));
 //    }
 
-    public ProjectEntity updateProject(Integer projectId, ProjectDTO projectDTO) {
+    public Map<String, Object> updateProject(Integer projectId, ProjectDTO projectDTO) {
         // Fetch the existing project from the database
         ProjectEntity existingProject = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
@@ -172,6 +235,8 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
         existingProject.setCreatedBy(createdBy);
         existingProject.setManager(manager);
 
+        List<String> addedEmployees = new ArrayList<>();
+
         // Update employees: Remove old employees and add new ones
         if (projectDTO.getEmployees() != null) {
             // Remove previous employees linked to the project
@@ -179,6 +244,7 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
 
             // Add new employees
             for (String username : projectDTO.getEmployees()) {
+                addedEmployees.add(username);
                 EmployeeEntity employee = employeeService.getEmployeeDetails(username);
                 if (!"employee".equalsIgnoreCase(employee.getRole().getRoleName())) {
                     throw new IllegalArgumentException("One or more employees have invalid roles.");
@@ -194,7 +260,11 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
         }
 
         // Save and return the updated project
-        return projectRepository.save(existingProject);
+        ProjectEntity project = projectRepository.save(existingProject);
+
+        return formatProject(project, addedEmployees);
+
+
     }
 
 
@@ -223,27 +293,64 @@ public ProjectEntity createProject(ProjectDTO projectDTO) {
         return projectRepository.findByCreatedBy(employee);
     }
 
-    public List<ProjectEntity> getProjectsByManagerUsername(String username) {
-        // Validate and retrieve the manager entity by username
+    public List<Map<String, Object>> getProjectsByManagerUsername(String username) {
         EmployeeEntity manager = employeeService.getEmployeeDetails(username);
 
         if (!"manager".equalsIgnoreCase(manager.getRole().getRoleName())) {
             throw new IllegalArgumentException("The provided username does not belong to a manager.");
         }
 
-        // Fetch and return projects managed by this username
-        return projectRepository.findProjectsByManagerUsername(username);
+
+        List<ProjectEntity> projects = projectRepository.findProjectsByManagerUsername(username);
+
+        List<Map<String, Object>> formattedProjects = new ArrayList<>();
+
+        for (ProjectEntity project : projects) {
+
+            List<EmployeeToProjectEntity> emp= employeeToProjectService.getEmployeesByProject(project);
+
+            List<String> employeeNames = new ArrayList<>();
+            for (EmployeeToProjectEntity e : emp) {
+                if (e.getEmployee() != null && e.getEmployee().getUsername() != null) {
+                    employeeNames.add(e.getEmployee().getUsername());
+                }
+            }
+
+            Map<String, Object> formattedProject = formatProject(project, employeeNames);
+            formattedProjects.add(formattedProject);
+        }
+
+        return formattedProjects;
+
     }
 
-    public List<ProjectEntity> getProjectsByEmployeeUsername(String username) {
-        // Validate and retrieve the employee entity by username
+    public List<Map<String, Object>> getProjectsByEmployeeUsername(String username) {
+
         EmployeeEntity employee = employeeService.getEmployeeDetails(username);
 
         if (!"employee".equalsIgnoreCase(employee.getRole().getRoleName())) {
             throw new IllegalArgumentException("The provided username does not belong to an employee.");
         }
 
-        // Fetch and return projects associated with this username
-        return projectRepository.findProjectsByEmployeeUsername(username);
+        List<ProjectEntity> projects = projectRepository.findProjectsByEmployeeUsername(username);
+
+        List<Map<String, Object>> formattedProjects = new ArrayList<>();
+
+        for (ProjectEntity project : projects) {
+
+            List<EmployeeToProjectEntity> emp= employeeToProjectService.getEmployeesByProject(project);
+
+            List<String> employeeNames = new ArrayList<>();
+            for (EmployeeToProjectEntity e : emp) {
+                if (e.getEmployee() != null && e.getEmployee().getUsername() != null) {
+                    employeeNames.add(e.getEmployee().getUsername());
+                }
+            }
+
+            Map<String, Object> formattedProject = formatProject(project, employeeNames);
+            formattedProjects.add(formattedProject);
+        }
+
+        return formattedProjects;
     }
 }
