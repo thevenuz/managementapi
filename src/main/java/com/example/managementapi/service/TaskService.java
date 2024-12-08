@@ -1,17 +1,14 @@
 package com.example.managementapi.service;
 
 import com.example.managementapi.entity.*;
-import com.example.managementapi.repository.EmployeeRepository;
-import com.example.managementapi.repository.ProjectRepository;
 import com.example.managementapi.dto.TaskDTO;
 import com.example.managementapi.repository.TaskRepository;
+import com.example.managementapi.repository.TicketRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class TaskService {
@@ -28,8 +25,22 @@ public class TaskService {
     @Autowired
     private EmployeeToTaskService employeeToTaskService;
 
+    @Autowired
+    private TicketRepository ticketRepository;
 
-    public TaskEntity createTask(Integer projectId, TaskDTO taskDTO) {
+    public List<TicketEntity> getTicketsByTask(Integer taskId) {
+        // Fetch the task by ID
+        TaskEntity task = getTaskById(taskId);
+        if (task == null) {
+            throw new IllegalArgumentException("Task with ID " + taskId + " not found");
+        }
+
+        // Fetch tickets associated with the task
+        return ticketRepository.findByTask(task);
+
+    }
+
+    public Map<String, Object> createTask(Integer projectId, TaskDTO taskDTO) {
         // Map DTO fields to TaskEntity
         TaskEntity task = new TaskEntity();
         task.setTaskName(taskDTO.getTask_title());
@@ -73,7 +84,44 @@ public class TaskService {
 //            }
 //        }
 
-        return savedTask;
+//        return savedTask;
+        return formatTask((savedTask));
+    }
+
+    private Map<String, Object> formatTask(TaskEntity task) {
+        List<EmployeeToTaskEntity> empTasks = employeeToTaskService.getMappingsByTask(task);
+
+        List<String> employeeList = new ArrayList<>();
+        if (empTasks != null) {
+            for (EmployeeToTaskEntity emp : empTasks) {
+                employeeList.add(emp.getEmployee().getUsername());
+            }
+        }
+
+        List<TicketEntity> tickets = getTicketsByTask(task.getTaskId());
+
+        List<Map<String, String>> ticketList = new ArrayList<>();
+
+        if (tickets != null) {
+            for (TicketEntity ticket : tickets) {
+                Map<String, String> ticketMap = new HashMap<>();
+                ticketMap.put("task_id", ticket.getTicketId().toString());
+                ticketMap.put("ticket_title", ticket.getTicketTitle());
+                ticketList.add(ticketMap);
+            }
+        }
+
+        Map<String, Object> taskDetails = new HashMap<>();
+        taskDetails.put("task_id", task.getTaskId());
+        taskDetails.put("task_title", task.getTaskName());
+        taskDetails.put("task_description", task.getTaskDescription());
+        taskDetails.put("assigned_team", task.getAssignedTeam());
+        taskDetails.put("task_status", task.getTaskStatus());
+        taskDetails.put("start_date", task.getStartDate() != null ? task.getStartDate().toString() : null);
+        taskDetails.put("expected_finish_date", task.getExpectedFinishDate() != null ? task.getExpectedFinishDate().toString() : null);
+        taskDetails.put("employees", employeeList);
+        taskDetails.put("tickets", ticketList);
+        return taskDetails;
     }
 
 
@@ -81,11 +129,16 @@ public class TaskService {
         return taskRepository.findAll();
     }
 
+    public Map<String, Object> getTaskByIdJson(Integer taskId) {
+        TaskEntity task = taskRepository.findById(taskId).orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        return formatTask(task);
+    }
+
     public TaskEntity getTaskById(Integer taskId) {
         return taskRepository.findById(taskId).orElseThrow(() -> new EntityNotFoundException("Task not found"));
     }
 
-    public TaskEntity updateTask(Integer taskId, TaskDTO taskDTO) {
+    public Map<String, Object> updateTask(Integer taskId, TaskDTO taskDTO) {
         // Fetch the existing task
         TaskEntity task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task with ID " + taskId + " not found."));
@@ -122,10 +175,9 @@ public class TaskService {
                 employeeToTaskService.createEmployeeToTask(employeeToTask);
             }
         }
+        TaskEntity newTask = taskRepository.findById(taskId).orElseThrow(() -> new EntityNotFoundException("Task not found"));
 
-
-
-        return updatedTask;
+        return formatTask(newTask);
     }
 
     public void deleteTask(Integer taskId) {

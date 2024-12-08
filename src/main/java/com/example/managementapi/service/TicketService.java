@@ -6,6 +6,7 @@ import com.example.managementapi.repository.TicketRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -170,6 +171,18 @@ public class TicketService {
         return updatedTicket;
     }
 
+
+//    public List<TicketEntity> getTicketsByTask(Integer taskId) {
+//        // Fetch the task by ID
+//        TaskEntity task = taskService.getTaskById(taskId);
+//        if (task == null) {
+//            throw new IllegalArgumentException("Task with ID " + taskId + " not found");
+//        }
+//
+//        // Fetch tickets associated with the task
+//        return ticketRepository.findByTask(task);
+//
+//    }
 
     public void deleteTicket(Integer ticketId) {
         TicketEntity ticket = getTicketById(ticketId)
