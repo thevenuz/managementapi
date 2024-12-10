@@ -1,8 +1,11 @@
 package com.example.managementapi.dto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CommentDTO {
-    private String commentDescription; // Renamed from 'commentText' to 'comment_description'
-    private String createdBy; // Username of the creator
+    @JsonProperty("comment_description")
+    private String commentDescription;
+    @JsonProperty("created_by")
+    private String createdBy;
 
     // Getters and Setters
     public String getCommentDescription() {

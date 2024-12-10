@@ -19,6 +19,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/prm")
+@CrossOrigin(origins = "*")
 public class TaskController {
 
     @Autowired

@@ -28,8 +28,27 @@ public class ProjectService {
     @Autowired
     private EmployeeToProjectService employeeToProjectService;
 
-    public List<ProjectEntity> getAllProjects() {
-        return projectRepository.findAll();
+    public List<Map<String, Object>> getAllProjects() {
+        List<ProjectEntity> projects = projectRepository.findAll();
+
+        List<Map<String, Object>> formattedProjects = new ArrayList<>();
+
+        for (ProjectEntity project : projects) {
+
+            List<EmployeeToProjectEntity> emp= employeeToProjectService.getEmployeesByProject(project);
+
+            List<String> employeeNames = new ArrayList<>();
+            for (EmployeeToProjectEntity e : emp) {
+                if (e.getEmployee() != null && e.getEmployee().getUsername() != null) {
+                    employeeNames.add(e.getEmployee().getUsername());
+                }
+            }
+
+            Map<String, Object> formattedProject = formatProject(project, employeeNames);
+            formattedProjects.add(formattedProject);
+        }
+
+        return formattedProjects;
     }
 
     public Map<String, Object> getProjectByIdJson(Integer id) {
@@ -175,16 +194,17 @@ public Map<String, Object> createProject(ProjectDTO projectDTO) {
         projectDetails.put("project_status", project.getProjectStatus());
         projectDetails.put("expected_finish_date", project.getExpectedFinishDate() != null ? project.getExpectedFinishDate().toString() : null);
         projectDetails.put("budget", project.getBudget() != null ? project.getBudget().toString() : null);
-        projectDetails.put("created_by", project.getCreatedBy() != null ? project.getCreatedBy().getEmployeeId() : null);
+        projectDetails.put("created_by", project.getCreatedBy() != null ? project.getCreatedBy().getEmployeeName() : null);
         projectDetails.put("employees", employees);
         //projectDetails.put("tasks", project.getTasks() != null ? project.getTasks().stream().map(TaskEntity::getTaskId).toList() : null);
-        projectDetails.put("manager", project.getManager() != null ? project.getManager().getEmployeeId() : null);
+        projectDetails.put("manager", project.getManager() != null ? project.getManager().getEmployeeName() : null);
 
         // Build the task list
         List<Map<String, String>> taskList = new ArrayList<>();
         if (tasks != null) {
             for (TaskEntity task : tasks) {
                 Map<String, String> taskMap = new HashMap<>();
+                taskMap.put("task_id", task.getTaskId().toString());
                 taskMap.put("task_title", task.getTaskName());
                 taskMap.put("task_description", task.getTaskDescription());
                 taskList.add(taskMap);
@@ -212,6 +232,8 @@ public Map<String, Object> createProject(ProjectDTO projectDTO) {
         ProjectEntity existingProject = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("Project not found with id: " + projectId));
 
+        System.out.println("hit");
+
         // Update project details
         existingProject.setProjectName(projectDTO.getProject_title());
         existingProject.setProjectDescription(projectDTO.getProject_description());
@@ -219,9 +241,14 @@ public Map<String, Object> createProject(ProjectDTO projectDTO) {
         existingProject.setExpectedFinishDate(projectDTO.getExpected_finish_date());
         existingProject.setBudget(projectDTO.getBudget());
 
+        System.out.println(existingProject);
+
         // Fetch employee details for manager and created_by
         EmployeeEntity manager = employeeService.getEmployeeDetails(projectDTO.getManager());
+        System.out.println(projectDTO.getCreated_by());
         EmployeeEntity createdBy = employeeService.getEmployeeDetails(projectDTO.getCreated_by());
+
+        System.out.println("hit 2");
 
         // Validate roles for manager and created_by
         if (!"manager".equalsIgnoreCase(manager.getRole().getRoleName())) {
@@ -234,6 +261,9 @@ public Map<String, Object> createProject(ProjectDTO projectDTO) {
         // Set created_by and manager
         existingProject.setCreatedBy(createdBy);
         existingProject.setManager(manager);
+
+
+        System.out.println("hit 3");
 
         List<String> addedEmployees = new ArrayList<>();
 
@@ -261,6 +291,10 @@ public Map<String, Object> createProject(ProjectDTO projectDTO) {
 
         // Save and return the updated project
         ProjectEntity project = projectRepository.save(existingProject);
+
+        System.out.println("hit 4");
+
+        System.out.println(project);
 
         return formatProject(project, addedEmployees);
 

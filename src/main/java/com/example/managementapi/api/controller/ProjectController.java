@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/prm/projects")
+@RequestMapping("/prm")
 @CrossOrigin(origins = "*")
 public class ProjectController {
 
@@ -25,12 +25,16 @@ public class ProjectController {
     @Autowired
     private EmployeeToProjectService employeeToProjectService;
 
-    @GetMapping
-    public ResponseEntity<List<ProjectEntity>> getAllProjects() {
-        return ResponseEntity.ok(projectService.getAllProjects());
+    @GetMapping("/projects")
+    public ResponseEntity<?> getAllProjects() {
+        List<Map<String, Object>> projects = projectService.getAllProjects();
+        Map<String, Object> response = new HashMap<>();
+        response.put("isSuccess", true);
+        response.put("data", projects);
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/projects/{id}")
     public ResponseEntity<?> getProjectById(@PathVariable Integer id) {
         try{
         Map<String, Object> project = projectService.getProjectByIdJson(id);
@@ -48,10 +52,11 @@ public class ProjectController {
 
     }
 
-    @PostMapping("/create")
+    //@CrossOrigin(origins = "http://localhost:3000")
+    @PostMapping("/projects/create")
     public ResponseEntity<Map<String, Object>> createProject(@RequestBody ProjectDTO project) {
 //        return ResponseEntity.ok(projectService.createProject(project));
-
+        System.out.println("Request received: " );
         try {
             // Create the project using the service
              Map<String, Object> createdProject = projectService.createProject(project);
@@ -73,7 +78,7 @@ public class ProjectController {
 
 
 
-    @PutMapping("/{id}")
+    @PutMapping("/projects/{id}")
     public ResponseEntity<?> updateProject(@PathVariable Integer id, @RequestBody ProjectDTO projectDTO) {
         try {
             Map<String, Object> project= projectService.updateProject(id, projectDTO);
@@ -90,7 +95,7 @@ public class ProjectController {
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/projects/{id}")
     public ResponseEntity<?> deleteProject(@PathVariable Integer id) {
         try{
         projectService.deleteProject(id);
@@ -107,7 +112,7 @@ public class ProjectController {
         }
     }
 
-    @GetMapping("/manager/{manager}")
+    @GetMapping("/projects/manager/{manager}")
     public ResponseEntity<?> getProjectsByManager(@PathVariable String manager) {
         try {
             List<Map<String, Object>> projects = projectService.getProjectsByManagerUsername(manager);
@@ -124,7 +129,7 @@ public class ProjectController {
         }
     }
 
-    @GetMapping("/employee/{employee}")
+    @GetMapping("/projects/employee/{employee}")
     public ResponseEntity<?> getProjectsByEmployee(@PathVariable String employee) {
         try{
             List<Map<String, Object>> projects = projectService.getProjectsByEmployeeUsername(employee);

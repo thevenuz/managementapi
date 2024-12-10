@@ -105,7 +105,7 @@ public class TaskService {
         if (tickets != null) {
             for (TicketEntity ticket : tickets) {
                 Map<String, String> ticketMap = new HashMap<>();
-                ticketMap.put("task_id", ticket.getTicketId().toString());
+                ticketMap.put("ticket_id", ticket.getTicketId().toString());
                 ticketMap.put("ticket_title", ticket.getTicketTitle());
                 ticketList.add(ticketMap);
             }

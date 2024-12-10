@@ -2,27 +2,38 @@ package com.example.managementapi.service;
 
 import com.example.managementapi.dto.TicketDTO;
 import com.example.managementapi.entity.*;
+import com.example.managementapi.repository.CommentRepository;
 import com.example.managementapi.repository.TicketRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.example.managementapi.service.CommentService;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class TicketService {
 
+
     private final TicketRepository ticketRepository;
     private final TaskService taskService;
     private final EmployeeService employeeService;
+//    @Autowired
+//    private final CommentService commentService;
+
+    @Autowired
+    private CommentRepository commentRepository;
+    private CommentService commentService;
 
     public TicketService(TicketRepository ticketRepository, TaskService taskService, EmployeeService employeeService) {
         this.ticketRepository = ticketRepository;
         this.taskService = taskService;
         this.employeeService = employeeService;
+//        this.commentService = commentService;
     }
 
-    public TicketEntity createTicket(Integer taskId, TicketDTO ticketDTO) {
+    public Map<String, Object> createTicket(Integer taskId, TicketDTO ticketDTO) {
         // Create a new Ticket entity object
         TicketEntity ticket = new TicketEntity();
 
@@ -86,15 +97,81 @@ public class TicketService {
             // Save each employee-to-ticket mapping here
         }
 
+
+
         // Return the saved ticket
-        return savedTicket;
+        return formatTicket(savedTicket);
+    }
+
+    public List<CommentEntity> getCommentsByTicket(Integer ticketId) {
+        Optional<TicketEntity> ticketOptional = getTicketById(ticketId);
+
+        if (ticketOptional.isEmpty()) {
+            throw new IllegalArgumentException("Ticket with ID " + ticketId + " not found");
+        }
+
+        TicketEntity ticket = ticketOptional.get();
+        if (ticket == null) {
+            throw new IllegalArgumentException("Ticket not found for ID: " + ticketId);
+        }
+        return commentRepository.findByTicket(ticket);
+    }
+
+    public Map<String, Object> formatTicket(TicketEntity ticket) {
+        // Format the assigned user
+        String assignedUser = ticket.getAssignedUser() != null ? ticket.getAssignedUser().getUsername() : null;
+
+        // Fetch and format comments associated with the ticket
+        List<CommentEntity> comments = getCommentsByTicket(ticket.getTicketId());
+        List<Map<String, Object>> commentList = new ArrayList<>();
+        if (comments != null) {
+            for (CommentEntity comment : comments) {
+                Map<String, Object> commentMap = new HashMap<>();
+                commentMap.put("comment_id", comment.getCommentId());
+                commentMap.put("comment_description", comment.getCommentDescription());
+                commentMap.put("created_by", comment.getCreatedBy().getUsername());
+//                commentMap.put("commented_at", comment.getCreatedAt() != null ? comment.getCreatedAt().toString() : null);
+                commentList.add(commentMap);
+            }
+        }
+
+        // Prepare the ticket details
+        Map<String, Object> ticketDetails = new HashMap<>();
+        ticketDetails.put("ticket_id", ticket.getTicketId());
+        ticketDetails.put("ticket_title", ticket.getTicketTitle());
+        ticketDetails.put("ticket_description", ticket.getTicketDescription());
+        ticketDetails.put("ticket_type", ticket.getTicketType().toString());
+        ticketDetails.put("created_by", ticket.getCreatedBy().getUsername());
+        ticketDetails.put("assigned_user", assignedUser);
+        ticketDetails.put("ticket_status", ticket.getStatus().toString());
+        ticketDetails.put("created_date", ticket.getCreatedAt() != null ? ticket.getCreatedAt().toString() : null);
+        ticketDetails.put("last_updated_date", ticket.getUpdatedAt() != null ? ticket.getUpdatedAt().toString() : null);
+        ticketDetails.put("closed_date", ticket.getClosedDate() != null ? ticket.getClosedDate().toString() : null);
+        ticketDetails.put("comments", commentList);
+
+        return ticketDetails;
+    }
+
+
+    public Map<String, Object> getTicketByIdJson(Integer ticketId) {
+        Optional<TicketEntity> ticketOptional =  ticketRepository.findById(ticketId);
+        if (ticketOptional.isEmpty()) {
+            throw new IllegalArgumentException("Ticket with ID " + ticketId + " not found");
+        }
+
+        TicketEntity ticket = ticketOptional.get();
+
+        return formatTicket(ticket);
+
     }
 
     public Optional<TicketEntity> getTicketById(Integer ticketId) {
         return ticketRepository.findById(ticketId);
+
+
     }
 
-    public TicketEntity updateTicket(Integer taskId, Integer ticketId, TicketDTO ticketDTO) {
+    public Map<String, Object> updateTicket(Integer taskId, Integer ticketId, TicketDTO ticketDTO) {
         // Find existing Ticket entity
         TicketEntity ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Ticket not found for ID: " + ticketId));
@@ -168,7 +245,7 @@ public class TicketService {
 //            }
 //        }
 
-        return updatedTicket;
+        return formatTicket(updatedTicket);
     }
 
 
@@ -184,9 +261,11 @@ public class TicketService {
 //
 //    }
 
+    @Transactional
     public void deleteTicket(Integer ticketId) {
         TicketEntity ticket = getTicketById(ticketId)
                 .orElseThrow(() -> new IllegalArgumentException("Ticket not found"));
+        commentService.deleteCommentsByTicket(ticket);
         ticketRepository.delete(ticket);
     }
 }
